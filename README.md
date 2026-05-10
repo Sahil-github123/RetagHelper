@@ -1,66 +1,82 @@
 # RetagHelper
 
-A lightweight local web app to simulate IIT Bombay course retagging and instantly visualize its impact on **SPI, CPI, and GPA**.
+A lightweight local web app to simulate IIT Bombay course retagging and instantly visualize its impact on **SPI, CPI, GPA, and credit distribution**.
 
-Built as a single-file Python application with an embedded modern frontend - no frameworks, databases, or setup hassle.
+Built as a **single-file Python application** with an embedded frontend — no frameworks, setup, or external dependencies required.
+
+---
 
 ## Features
 
-* Interactive retagging simulator
 * Real-time CPI / SPI / GPA recalculation
-* IIT Bombay UG rulebook-based tag transition logic
-* Semester-wise performance tracking
+* Interactive course retagging simulator
+* IIT Bombay UG Rulebook 2025–26 based tag transitions
+* Total CPI credits + tag-wise credit tracking
+* Retag summary panel with CPI impact
+* Save / Load progress as `.json`
 * Add/remove semesters and courses dynamically
-* Clean responsive UI with zero dependencies
-* Runs entirely locally in your browser
+* Responsive modern UI
+* Runs entirely locally
+
+---
 
 ## Supported Tags
 
-* Core Courses (C)
-* Department Electives (D)
-* STEM Electives (SE)
-* HASMED Electives (HE)
-* Minor Courses (M)
-* Honors / Honors Electives
-* Additional Learning Courses (T)
-* Non-credit Courses (N)
+| Tag | Meaning                   |
+| --- | ------------------------- |
+| C   | Core                      |
+| D   | Department Elective       |
+| SE  | STEM Elective             |
+| HE  | HASMED Elective           |
+| M   | Minor                     |
+| T   | Additional Learning (ALC) |
+| O   | Honors                    |
+| E   | Honors Elective           |
+| N   | Non-credit                |
+
+---
 
 ## Run Locally
 
-```bash
+```bash id="v5c3qv"
 python RetagHelper.py
 ```
 
 Then open:
 
-```text
+```text id="l2d9jq"
 http://localhost:5000
 ```
+
+---
 
 ## Requirements
 
 * Python 3.x
 * No external packages required
 
-## How It Works
-
-The app launches a local HTTP server using Python’s built-in `http.server` module and serves an embedded HTML/CSS/JS frontend.
-
-All calculations are performed client-side in real time.
-
-## Screenshots / UI Highlights
-
-* Semester-wise SPI cards
-* Live CPI delta tracking
-* Retag impact indicators
-* Dynamic course management
+---
 
 ## Notes
 
-* Retagging rules follow IIT Bombay UG Rulebook 2025-26.
-* CPI includes only CPI-counting tags.
-* Non-credit and excluded categories are ignored in CPI calculations.
-* GPA is just taken as 0.4*CPI
+* CPI includes only CPI-counted tags (C, D, SE, HE)
+* GPA is approximated as:
+
+```text id="t7x7t6"
+GPA = 0.4 × CPI
+```
+
+* Retagging rules follow IIT Bombay UG Rulebook 2025–26
+
+---
+
+## Tech Stack
+
+* Python (`http.server`)
+* Embedded HTML/CSS/JavaScript frontend
+* Fully client-side calculations
+
+---
 
 ## License
 
