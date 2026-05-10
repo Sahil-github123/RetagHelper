@@ -12,11 +12,41 @@ Built as a **single-file Python application** with an embedded frontend — no f
 * Interactive course retagging simulator
 * IIT Bombay UG Rulebook 2025–26 based tag transitions
 * Total CPI credits + tag-wise credit tracking
-* Retag summary panel with CPI impact
-* Save / Load progress as `.json`
+* Detailed retag summary panel with CPI impact
+* 💾 Save current state as `.json`
+* 📂 Load previous analysis anytime
 * Add/remove semesters and courses dynamically
 * Responsive modern UI
 * Runs entirely locally
+
+---
+
+## Save / Load Feature
+
+RetagHelper allows you to save your entire analysis state and continue later.
+
+### 💾 Save
+
+Exports a `.json` file containing:
+
+* Original course tags
+* Updated/retagged course tags
+* Added/removed courses
+* Credits and grades
+* Entire current analysis state
+
+### 📂 Load
+
+Load a previously saved `.json` file to instantly restore your work and continue analysis from where you left off.
+
+> **Important:**
+> The `.json` file stores the internal state and is not meant for easy manual reading.
+> After finalizing your retagging, it is recommended to take a screenshot of the **📊 Summary** panel (top-right button), since it provides a clean readable overview of:
+>
+> * Retagged courses
+> * Tag changes
+> * CPI/GPA impact
+> * Tag-wise credit redistribution
 
 ---
 
@@ -38,13 +68,13 @@ Built as a **single-file Python application** with an embedded frontend — no f
 
 ## Run Locally
 
-```bash id="v5c3qv"
+```bash id="5tlivq"
 python RetagHelper.py
 ```
 
 Then open:
 
-```text id="l2d9jq"
+```text id="0k4f4g"
 http://localhost:5000
 ```
 
@@ -62,7 +92,7 @@ http://localhost:5000
 * CPI includes only CPI-counted tags (C, D, SE, HE)
 * GPA is approximated as:
 
-```text id="t7x7t6"
+```text id="jlwmvn"
 GPA = 0.4 × CPI
 ```
 
