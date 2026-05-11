@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RetagHelper — IIT Bombay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Topbar -->
+<div id="topbar">
+  <div id="topbar-main">
+    <div id="logo">
+      <div class="icon">R</div>
+      <span class="title">RetagHelper</span>
+      <span class="badge">IIT Bombay · v2</span>
+    </div>
+
+    <div class="score-cards">
+      <div class="score-card" style="min-width:150px">
+        <div class="sc-label">Total CPI Credits</div>
+        <div class="sc-val">
+          <span class="sc-num" id="sc-orig-cr" style="font-size:17px">—</span>
+          <span class="sc-delta" id="sc-cr-delta"></span>
+        </div>
+        <div class="sc-was" id="sc-cr-was"></div>
+      </div>
+      <div class="score-card">
+        <div class="sc-label">CPI</div>
+        <div class="sc-val"><span class="sc-num" id="sc-cpi-num">—</span><span class="sc-delta" id="sc-cpi-delta"></span></div>
+        <div class="sc-was" id="sc-cpi-was"></div>
+      </div>
+      <div class="score-card">
+        <div class="sc-label">GPA / 4</div>
+        <div class="sc-val"><span class="sc-num" id="sc-gpa-num">—</span><span class="sc-delta" id="sc-gpa-delta"></span></div>
+        <div class="sc-was" id="sc-gpa-was"></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="tb-btn summary-btn" onclick="openSummary()">📊 Summary</button>
+      <button class="tb-btn secondary"   onclick="saveState()">💾 Save</button>
+      <button class="tb-btn secondary"   onclick="document.getElementById('file-input').click()">📂 Load</button>
+      <input type="file" id="file-input" accept=".json" onchange="loadState(event)">
+    </div>
+  </div>
+  <div id="credit-strip"></div>
+</div>
+
+<!-- Main content -->
+<div id="main">
+  <div id="legend"></div>
+  <div id="spi-row"></div>
+  <div class="infobar">
+    ℹ&nbsp; Change <strong>New Tag</strong> to simulate retagging — CPI updates instantly.
+    Tags that count toward CPI: <strong>Core (C), Dept Elective (D), STEM (SE), HASMED (HE)</strong>. Check your curriculum for minimum credit requirements per tag (Ex: in aerospace, DE=36, SE=12, HE=12, FE=36). Flexible electives(Institute electives) can be any course from DE/SE/HE categories above the minimums, thus that tag is not explicitly tracked.
+    Min <strong>18 credits/sem</strong> required. Retagging allowed <strong>twice</strong> per program (pre-placement & post-curriculum).
+    &nbsp;|&nbsp; <strong>💾 Save</strong> exports your state as a JSON file &nbsp;·&nbsp; <strong>📂 Load</strong> restores a saved file &nbsp;·&nbsp; <strong>📊 Summary</strong> shows the full retag report.
+  </div>
+  <div id="sem-container"></div>
+  <div id="add-sem-area">
+    <button class="add-sem-btn" onclick="showAddSem()"><span style="font-size:17px">+</span> Add Semester</button>
+    <div class="add-sem-row" id="add-sem-row" style="display:none">
+      <input id="new-sem-name" placeholder="e.g. Semester 9" onkeydown="if(event.key==='Enter')addSemester()">
+      <button class="btn-primary" onclick="addSemester()">Add</button>
+      <button class="btn-ghost"   onclick="hideAddSem()">Cancel</button>
+    </div>
+  </div>
+  <div class="footer">
+    Tag rules per IIT Bombay UG Rulebook 2025-26 &nbsp;·&nbsp;
+    Retagging: twice in program (pre-placements & post-curriculum) &nbsp;·&nbsp;
+    Blue rows = CPI-affecting changes &nbsp;·&nbsp;
+    💾 Save / 📂 Load to persist across sessions
+  </div>
+</div>
+
+<!-- Add Course Modal -->
+<div class="modal-overlay" id="add-modal" style="display:none" onclick="if(event.target===this)closeModal('add-modal')">
+  <div class="modal">
+    <h3>Add Course</h3>
+    <div class="modal-fields">
+      <div class="field"><label>COURSE CODE</label><input id="m-code" placeholder="e.g. AE 301"></div>
+      <div class="field"><label>COURSE NAME</label><input id="m-name" placeholder="e.g. Advanced Aerodynamics"></div>
+      <div class="modal-3col">
+        <div class="field"><label>TAG</label><select id="m-tag"></select></div>
+        <div class="field"><label>CREDITS</label><input id="m-credits" type="number" min="0" max="48" value="6"></div>
+        <div class="field">
+          <label>GRADE</label>
+          <select id="m-grade">
+            <option>AA</option><option>AB</option><option selected>BB</option>
+            <option>BC</option><option>CC</option><option>CD</option><option>DD</option>
+            <option>FF</option><option value="PP">PP</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost"   onclick="closeModal('add-modal')">Cancel</button>
+      <button class="btn-primary" onclick="submitAddCourse()">Add Course</button>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Modal -->
+<div class="modal-overlay" id="summary-modal" style="display:none" onclick="if(event.target===this)closeModal('summary-modal')">
+  <div class="modal summary-modal-inner">
+    <h3>📊 Retag Summary</h3>
+    <div id="summary-body"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost"   onclick="closeModal('summary-modal')">Close</button>
+      <button class="btn-primary" onclick="saveState()">💾 Save State</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast">✓ Done!</div>
+
+<!-- Initial data (injected at build time; replaces the Python server's template substitution) -->
+<script>
+window.INITIAL_DATA = {
+  "semesters": [
+    {
+      "id": "s1", "name": "Semester 1",
+      "courses": [
+        {"id":"c1",  "code":"AE 103",  "name":"Historical Perspective of Aerospace Engg.",     "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c2",  "code":"BB 101",  "name":"Biology",                                        "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c3",  "code":"CH 117",  "name":"Chemistry Lab",                                  "tag":"C", "newTag":"C", "credits":3, "grade":"AA"},
+        {"id":"c4",  "code":"GC 101",  "name":"Gender in the Workplace",                        "tag":"N", "newTag":"N", "credits":0, "grade":"PP"},
+        {"id":"c5",  "code":"MA 105",  "name":"Calculus",                                       "tag":"C", "newTag":"C", "credits":8, "grade":"AA"},
+        {"id":"c6",  "code":"MS 101",  "name":"Makerspace",                                     "tag":"C", "newTag":"C", "credits":8, "grade":"AA"},
+        {"id":"c7",  "code":"NOCS01",  "name":"NCC/NSS/NSO",                                    "tag":"N", "newTag":"N", "credits":0, "grade":"PP"}
+      ]
+    },
+    {
+      "id": "s2", "name": "Semester 2",
+      "courses": [
+        {"id":"c8",  "code":"AE 152",  "name":"Introduction to Aerospace Engg.",                "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c9",  "code":"CS 101",  "name":"Computer Programming and Utilization",           "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c10", "code":"ENT101",  "name":"Introduction to Innovation & Entrepreneurship",  "tag":"C", "newTag":"C", "credits":4, "grade":"AA"},
+        {"id":"c11", "code":"HS 110",  "name":"Introduction to Psychology",                     "tag":"C", "newTag":"C", "credits":4, "grade":"AA"},
+        {"id":"c12", "code":"MA 110",  "name":"Linear Algebra & Differential Equations",        "tag":"C", "newTag":"C", "credits":8, "grade":"AA"},
+        {"id":"c13", "code":"NOCS02",  "name":"NCC/NSS/NSO",                                    "tag":"N", "newTag":"N", "credits":0, "grade":"PP"},
+        {"id":"c14", "code":"PH 117",  "name":"Physics Lab",                                    "tag":"C", "newTag":"C", "credits":3, "grade":"AA"},
+        {"id":"c15", "code":"TA 101",  "name":"Teaching Assistant Skill Enhancement (TASET)",   "tag":"N", "newTag":"N", "credits":0, "grade":"PP"}
+      ]
+    },
+    {
+      "id": "s3", "name": "Semester 3",
+      "courses": [
+        {"id":"c16", "code":"AE 223",  "name":"Thermodynamics and Propulsion",                  "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c17", "code":"AE 227",  "name":"Solid Mechanics",                                "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c18", "code":"AE 229",  "name":"Intro to Aerodynamics & Propulsion Lab",         "tag":"C", "newTag":"C", "credits":3, "grade":"AA"},
+        {"id":"c19", "code":"AE 231",  "name":"Intro to Aerospace Structures & Control Lab",    "tag":"C", "newTag":"C", "credits":3, "grade":"AA"},
+        {"id":"c20", "code":"AE 308",  "name":"Control Theory",                                 "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c22", "code":"EC 101",  "name":"Economics",                                      "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c23", "code":"ES250 & HS250", "name":"Environmental Studies",                    "tag":"C", "newTag":"C", "credits":6, "grade":"PP"}
+      ]
+    },
+    {
+      "id": "s4", "name": "Semester 4",
+      "courses": [
+        {"id":"c27", "code":"AE 233",  "name":"Control Systems Laboratory",                     "tag":"C", "newTag":"C", "credits":3, "grade":"AA"},
+        {"id":"c28", "code":"AE 238",  "name":"Aerospace Structural Mechanics",                 "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c29", "code":"AE 244",  "name":"Low Speed Aerodynamics",                         "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c30", "code":"AE 246",  "name":"Aircraft Structures Laboratory",                 "tag":"C", "newTag":"C", "credits":3, "grade":"AA"},
+        {"id":"c31", "code":"AE 248",  "name":"AI and Data Science",                            "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c33", "code":"DE 250",  "name":"Design Thinking for Innovation",                 "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c34", "code":"PH 111",  "name":"Introduction to Classical Physics",              "tag":"C", "newTag":"C", "credits":4, "grade":"AA"}
+      ]
+    },
+    {
+      "id": "s5", "name": "Semester 5",
+      "courses": [
+        {"id":"c38", "code":"AE 339",  "name":"High Speed Aerodynamics",                        "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c39", "code":"AE 341",  "name":"Flight Mechanics of Aircrafts and Spacecrafts",  "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c40", "code":"AE 343",  "name":"Aerodynamics Laboratory",                        "tag":"C", "newTag":"C", "credits":3, "grade":"AA"},
+        {"id":"c41", "code":"AE 344",  "name":"Aero Propulsion",                                "tag":"C", "newTag":"C", "credits":6, "grade":"AA"},
+        {"id":"c42", "code":"AE 345",  "name":"Aircraft Propulsion Laboratory",                 "tag":"C", "newTag":"C", "credits":3, "grade":"AA"}
+      ]
+    },
+    {"id": "s6", "name": "Semester 6", "courses": []},
+    {"id": "s7", "name": "Semester 7", "courses": []},
+    {"id": "s8", "name": "Semester 8", "courses": []}
+  ]
+};
+</script>
+<script src="script.js"></script>
+</body>
+</html>
