@@ -55,10 +55,13 @@
   <div id="legend"></div>
   <div id="spi-row"></div>
   <div class="infobar">
-    ℹ&nbsp; Change <strong>New Tag</strong> to simulate retagging — CPI updates instantly.
-    Tags that count toward CPI: <strong>Core (C), Dept Elective (D), STEM (SE), HASMED (HE)</strong>. Check your curriculum for minimum credit requirements per tag (Ex: in aerospace, DE=36, SE=12, HE=12, FE=36). Flexible electives(Institute electives) can be any course from DE/SE/HE categories above the minimums, thus that tag is not explicitly tracked.
-    Min <strong>18 credits/sem</strong> required. Retagging allowed <strong>twice</strong> per program (pre-placement & post-curriculum).
-    &nbsp;|&nbsp; <strong>💾 Save</strong> exports your state as a JSON file &nbsp;·&nbsp; <strong>📂 Load</strong> restores a saved file &nbsp;·&nbsp; <strong>📊 Summary</strong> shows the full retag report.
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:5px;padding:0">
+      <li>🏷️ Change <strong>New Tag</strong> to simulate retagging — CPI updates instantly.</li>
+      <li>📊 Tags that count toward CPI: <strong>Core (C), Dept Elective (D), STEM (SE), HASMED (HE)</strong>. Flexible electives above minimums are not explicitly tracked.</li>
+      <li>📋 Check your curriculum for minimum credits per tag (e.g. Aerospace: DE=36, SE=12, HE=12, FE=36).</li>
+      <li>⚠️ Min <strong>18 credits/sem</strong> required. Retagging allowed <strong>twice</strong> per program (pre-placement &amp; post-curriculum).</li>
+      <li>💾 <strong>Save</strong> exports state as JSON &nbsp;·&nbsp; 📂 <strong>Load</strong> restores a saved file &nbsp;·&nbsp; 📊 <strong>Summary</strong> shows the full retag report.</li>
+    </ul>
   </div>
   <div id="sem-container"></div>
   <div id="add-sem-area">
@@ -74,6 +77,8 @@
     Retagging: twice in program (pre-placements & post-curriculum) &nbsp;·&nbsp;
     Blue rows = CPI-affecting changes &nbsp;·&nbsp;
     💾 Save / 📂 Load to persist across sessions
+    <br>
+    Made by <strong style="color:#94a8be">Sahil Patil</strong>
   </div>
 </div>
 
