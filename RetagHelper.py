@@ -399,7 +399,7 @@ select.sel.changed{background:rgba(59,130,246,0.14);border-color:var(--blue);col
   <div id="spi-row"></div>
   <div class="infobar">
     ℹ&nbsp; Change <strong>New Tag</strong> to simulate retagging — CPI updates instantly.
-    Tags that count toward CPI: <strong>Core (C), Dept Elective (D), STEM (SE), HASMED (HE)</strong>. Check your curriculum for minimum credit requirements per tag (Ex: in aerospace, DE=36, SE=12, HE=12, FE=36). Flexible electives can be any course from DE/SE/HE categories above the minimums, thus that tag is not explicitly tracked.
+    Tags that count toward CPI: <strong>Core (C), Dept Elective (D), STEM (SE), HASMED (HE)</strong>. Check your curriculum for minimum credit requirements per tag (Ex: in aerospace, DE=36, SE=12, HE=12, FE=36). Flexible electives(Institute electives) can be any course from DE/SE/HE categories above the minimums, thus that tag is not explicitly tracked.
     Min <strong>18 credits/sem</strong> required. Retagging allowed <strong>twice</strong> per program (pre-placement & post-curriculum).
     &nbsp;|&nbsp; <strong>💾 Save</strong> exports your state as a JSON file &nbsp;·&nbsp; <strong>📂 Load</strong> restores a saved file &nbsp;·&nbsp; <strong>📊 Summary</strong> shows the full retag report.
   </div>
