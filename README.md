@@ -1,113 +1,59 @@
 # RetagHelper
 
-A lightweight local web app to simulate IIT Bombay course retagging and instantly visualize its impact on **SPI, CPI, GPA, and credit distribution**.
+Simulate IIT Bombay course retagging and instantly see the impact on **SPI, CPI, GPA, and credit distribution**.
 
-Built as a **single-file Python application** with an embedded frontend — no frameworks, setup, or external dependencies required.
+Open `index.html` in any browser — no server, no setup.
 
 ---
 
 ## Features
 
-* Real-time CPI / SPI / GPA recalculation
-* Interactive course retagging simulator
-* IIT Bombay UG Rulebook 2025–26 based tag transitions
-* Total CPI credits + tag-wise credit tracking
-* Detailed retag summary panel with CPI impact
-* 💾 Save current state as `.json`
-* 📂 Load previous analysis anytime
-* Add/remove semesters and courses dynamically
-* Responsive modern UI
-* Runs entirely locally
+- Real-time CPI / SPI / GPA recalculation
+- Interactive retagging simulator with IIT Bombay UG Rulebook 2025–26 tag transition rules
+- Tag-wise credit tracking + total CPI credits display
+- Detailed retag summary panel (CPI impact, credit redistribution, retagged course list)
+- 💾 Save state as `.json` · 📂 Load previous analysis
+- Add/remove courses and semesters dynamically
 
 ---
 
-## Save / Load Feature
+## Usage
 
-RetagHelper allows you to save your entire analysis state and continue later.
+Just open `index.html` in a browser. No installation needed.
 
-### 💾 Save
-
-Exports a `.json` file containing:
-
-* Original course tags
-* Updated/retagged course tags
-* Added/removed courses
-* Credits and grades
-* Entire current analysis state
-
-### 📂 Load
-
-Load a previously saved `.json` file to instantly restore your work and continue analysis from where you left off.
-
-> **Important:**
-> The `.json` file stores the internal state and is not meant for easy manual reading.
-> After finalizing your retagging, it is recommended to take a screenshot of the **📊 Summary** panel (top-right button), since it provides a clean readable overview of:
->
-> * Retagged courses
-> * Tag changes
-> * CPI/GPA impact
-> * Tag-wise credit redistribution
+To continue a previous session, click **📂 Load** and select your saved `.json` file.  
+After finalizing, use **📊 Summary** for a clean overview — recommended to screenshot before closing.
 
 ---
 
 ## Supported Tags
 
-| Tag | Meaning                   |
-| --- | ------------------------- |
-| C   | Core                      |
-| D   | Department Elective       |
-| SE  | STEM Elective             |
-| HE  | HASMED Elective           |
-| M   | Minor                     |
-| T   | Additional Learning (ALC) |
-| O   | Honors                    |
-| E   | Honors Elective           |
-| N   | Non-credit                |
-
----
-
-## Run Locally
-
-```bash id="5tlivq"
-python RetagHelper.py
-```
-
-Then open:
-
-```text id="0k4f4g"
-http://localhost:5000
-```
-
----
-
-## Requirements
-
-* Python 3.x
-* No external packages required
+| Tag | Meaning | Counts toward CPI |
+|-----|---------|:-----------------:|
+| C | Core | ✓ |
+| D | Department Elective | ✓ |
+| SE | STEM Elective | ✓ |
+| HE | HASMED Elective | ✓ |
+| M | Minor | — |
+| T | Additional Learning (ALC) | — |
+| O | Honors | — |
+| E | Honors Elective | — |
+| N | Non-credit | — |
 
 ---
 
 ## Notes
 
-* CPI includes only CPI-counted tags (C, D, SE, HE)
-* GPA is approximated as:
-
-```text id="jlwmvn"
-GPA = 0.4 × CPI
-```
-
-* Retagging rules follow IIT Bombay UG Rulebook 2025–26
+- GPA is approximated as `0.4 × CPI`
+- Retagging is allowed **twice** per program (pre-placements & post-curriculum)
 
 ---
 
 ## Tech Stack
 
-* Python (`http.server`)
-* Embedded HTML/CSS/JavaScript frontend
-* Fully client-side calculations
+HTML · CSS · Vanilla JavaScript (fully client-side)
 
 ---
 
 ## License
-
-MIT License
+MIT
