@@ -9,7 +9,7 @@ Open `index.html` in any browser — no server, no setup.
 ## Features
 
 - Real-time CPI / SPI / GPA recalculation
-- Interactive retagging simulator with IIT Bombay UG Rulebook 2025–26 tag transition rules
+- Interactive retagging simulator with IIT Bombay UG and PG Rulebook 2025–26 tag transition rules
 - Tag-wise credit tracking + total CPI credits display
 - Detailed retag summary panel (CPI impact, credit redistribution, retagged course list)
 - 💾 Save state as `.json` · 📂 Load previous analysis

@@ -20,10 +20,14 @@
     <div id="logo">
       <div class="icon">R</div>
       <span class="title">RetagHelper</span>
-      <span class="badge">IIT Bombay · v2</span>
+      <span class="badge" id="program-badge">IIT Bombay · UG</span>
     </div>
 
     <div class="score-cards">
+      <select class="program-select" id="program-select" onchange="setProgram(this.value)">
+        <option value="ug">UG</option>
+        <option value="mtech">PG</option>
+      </select>
       <div class="score-card" style="min-width:150px">
         <div class="sc-label">Total CPI Credits</div>
         <div class="sc-val">
@@ -59,14 +63,9 @@
   <div id="legend"></div>
   <div id="spi-row"></div>
   <div class="infobar">
-    <ul style="list-style:none;display:flex;flex-direction:column;gap:5px;padding:0">
-      <li>🏷️ Change <strong>New Tag</strong> to simulate retagging — CPI updates instantly.</li>
-      <li>📊 Tags that count toward CPI: <strong>Core (C), Dept Elective (D), STEM (SE), HASMED (HE)</strong>. Flexible electives above minimums are not explicitly tracked.</li>
-      <li>📋 Check your curriculum for minimum credits per tag (e.g. Aerospace: DE=36, SE=12, HE=12, FE=36).</li>
-      <li>⚠️ Min <strong>18 credits/sem</strong> required. Retagging allowed <strong>twice</strong> per program (pre-placement &amp; post-curriculum).</li>
-      <li>💾 <strong>Save</strong> exports state as JSON &nbsp;·&nbsp; 📂 <strong>Load</strong> restores a saved file &nbsp;·&nbsp; 📊 <strong>Summary</strong> shows the full retag report.</li>
-    </ul>
+    <ul id="infobar-list" style="list-style:none;display:flex;flex-direction:column;gap:5px;padding:0"></ul>
   </div>
+  <div id="program-disclaimer" class="program-disclaimer" style="display:none"></div>
   <div id="sem-container"></div>
   <div id="add-sem-area">
     <button class="add-sem-btn" onclick="showAddSem()"><span style="font-size:17px">+</span> Add Semester</button>
@@ -77,12 +76,9 @@
     </div>
   </div>
   <div class="footer">
-    Tag rules per IIT Bombay UG Rulebook 2025-26 &nbsp;·&nbsp;
-    Retagging: twice in program (pre-placements & post-curriculum) &nbsp;·&nbsp;
-    Blue rows = CPI-affecting changes &nbsp;·&nbsp;
-    💾 Save / 📂 Load to persist across sessions
+    <span id="footer-text"></span>
     <br>
-    Made by <strong style="color:#94a8be">Sahil Patil</strong>
+    Made by <strong style="color:#94a8be">Sahil Patil and Ajaz Ahmed Shah</strong>
   </div>
 </div>
 
@@ -98,11 +94,7 @@
         <div class="field"><label>CREDITS</label><input id="m-credits" type="number" min="0" max="48" value="6"></div>
         <div class="field">
           <label>GRADE</label>
-          <select id="m-grade">
-            <option>AA</option><option>AB</option><option selected>BB</option>
-            <option>BC</option><option>CC</option><option>CD</option><option>DD</option>
-            <option>FF</option><option value="PP">PP</option>
-          </select>
+          <select id="m-grade"></select>
         </div>
       </div>
     </div>
@@ -130,7 +122,9 @@
 
 <!-- Initial data (injected at build time; replaces the Python server's template substitution) -->
 <script>
-window.INITIAL_DATA = {
+window.INITIAL_PROGRAM = "ug";
+
+window.INITIAL_DATA_UG = {
   "semesters": [
     {
       "id": "s1", "name": "Semester 1",
@@ -194,6 +188,32 @@ window.INITIAL_DATA = {
     {"id": "s6", "name": "Semester 6", "courses": []},
     {"id": "s7", "name": "Semester 7", "courses": []},
     {"id": "s8", "name": "Semester 8", "courses": []}
+  ]
+};
+
+window.INITIAL_DATA_MTECH = {
+  "semesters": [
+    {
+      "id": "m1", "name": "Semester 1",
+      "courses": [
+        {"id":"m1c1", "code":"CS 725", "name":"Foundations of Machine Learning",          "tag":"E",   "newTag":"E",   "credits":6, "grade":"AA"},
+        {"id":"m1c2", "code":"CS 772", "name":"Deep Learning for NLP", "tag":"E", "newTag":"E", "credits":6, "grade":"AA"},
+        {"id":"m1c3", "code":"CS 744", "name":"Design and Engineering of Computing Systems",    "tag":"E", "newTag":"E", "credits":6, "grade":"AA"},
+        {"id":"m1c4", "code":"CS 699", "name":"Software Lab",                              "tag":"C",   "newTag":"C",   "credits":8, "grade":"AA"}
+      ]
+    },
+    {
+      "id": "m2", "name": "Semester 2",
+      "courses": [
+        {"id":"m2c1", "code":"CS 899", "name":"Communication Skills",              "tag":"C",  "newTag":"C",  "credits":6, "grade":"PP"},
+        {"id":"m2c2", "code":"CS 694", "name":"Seminar",                                  "tag":"C",   "newTag":"C",   "credits":4, "grade":"AA"},
+        {"id":"m2c3", "code":"CS 691", "name":"RnD-I",                 "tag":"C",   "newTag":"C",   "credits":6, "grade":"AA"},
+        {"id":"m2c4", "code":"CS 682", "name":"Software Engineering",                     "tag":"E",   "newTag":"E",   "credits":6, "grade":"AA"},
+        {"id":"m2c5", "code":"CS 770", "name":"Process Engineering",                      "tag":"E",   "newTag":"E",   "credits":6, "grade":"AA"}
+      ]
+    },
+    {"id": "m3", "name": "Semester 3", "courses": []},
+    {"id": "m4", "name": "Semester 4", "courses": []}
   ]
 };
 </script>
