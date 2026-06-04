@@ -1,27 +1,122 @@
-// ── Tag definitions ───────────────────────────────────────────────────────────
-const TAG_META = {
-  C:  {label:"Core Course",               short:"Core",   color:"#e05260", counts:true },
-  D:  {label:"Department Elective",       short:"Dept E", color:"#f07d3a", counts:true },
-  SE: {label:"STEM Elective",             short:"STEM",   color:"#4ca4e0", counts:true },
-  HE: {label:"HASMED Elective",           short:"HSMD",   color:"#9b63d8", counts:true },
-  M:  {label:"Minor Course",              short:"Minor",  color:"#2db58e", counts:false},
-  T:  {label:"Additional Learning (ALC)", short:"ALC",    color:"#8a9bae", counts:false},
-  O:  {label:"Honors Course",             short:"Honors", color:"#c9a227", counts:false},
-  E:  {label:"Honors Elective",           short:"Hon. E", color:"#b08040", counts:false},
-  N:  {label:"Non-credit",               short:"N/A",    color:"#555555", counts:false},
+const PROGRAM_SCHEMAS = {
+  ug: {
+    badge: "IIT Bombay · UG",
+    footer: `Tag rules per IIT Bombay UG Rulebook 2025-26 &nbsp;·&nbsp; Retagging: twice in program (pre-placements &amp; post-curriculum) &nbsp;·&nbsp; Blue rows = CPI-affecting changes &nbsp;·&nbsp; 💾 Save / 📂 Load to persist across sessions`,
+    infobar: [
+      `🏷️ Change <strong>New Tag</strong> to simulate retagging — CPI updates instantly.`,
+      `📊 Tags that count toward CPI: <strong>Core (C), Dept Elective (D), STEM (SE), HASMED (HE)</strong>.`,
+      `📋 Check your curriculum for minimum credits per tag (example varies by department).`,
+      `⚠️ Min <strong>18 credits/sem</strong> required. Retagging allowed <strong>twice</strong> per program (pre-placement &amp; post-curriculum).`,
+      `💾 <strong>Save</strong> exports state as JSON &nbsp;·&nbsp; 📂 <strong>Load</strong> restores a saved file &nbsp;·&nbsp; 📊 <strong>Summary</strong> shows the full retag report.`,
+    ],
+    tagMeta: {
+      C:  {label:"Core Course",               short:"Core",   color:"#e05260", counts:true },
+      D:  {label:"Department Elective",       short:"Dept E", color:"#f07d3a", counts:true },
+      SE: {label:"STEM Elective",             short:"STEM",   color:"#4ca4e0", counts:true },
+      HE: {label:"HASMED Elective",           short:"HSMD",   color:"#9b63d8", counts:true },
+      M:  {label:"Minor Course",              short:"Minor",  color:"#2db58e", counts:false},
+      T:  {label:"Additional Learning (ALC)", short:"ALC",    color:"#8a9bae", counts:false},
+      O:  {label:"Honors Course",             short:"Honors", color:"#c9a227", counts:false},
+      E:  {label:"Honors Elective",           short:"Hon. E", color:"#b08040", counts:false},
+      N:  {label:"Non-credit",               short:"N/A",    color:"#555555", counts:false},
+    },
+    transitions: {
+      T:["D","SE","HE","O","E","M"], C:[], D:["T","O","E"],
+      SE:["T"], HE:["T"], O:["T","D","E"], E:["T","D","O"], M:["T","SE","HE"], N:[],
+    },
+    initialData: () => window.INITIAL_DATA_UG,
+  },
+  mtech: {
+    badge: "IIT Bombay · PG",
+    footer: `PG mode &nbsp;·&nbsp; Blue rows = CPI-affecting changes &nbsp;·&nbsp; 💾 Save / 📂 Load to persist across sessions`,
+    infobar: [
+      `🏷️ Change <strong>New Category</strong> to simulate how re-categorising coursework changes CPI credits and CPI.`,
+      `📚 Audit is limited to one per semester (with instructor consent).`,
+      `💾 <strong>Save</strong> exports state as JSON &nbsp;·&nbsp; 📂 <strong>Load</strong> restores a saved file &nbsp;·&nbsp; 📊 <strong>Summary</strong> shows the full report.`,
+    ],
+    tagMeta: {
+      C:   {label:"Core Course",               short:"Core",   color:"#e05260", counts:true },
+      E:   {label:"Elective",                  short:"Elect",  color:"#4ca4e0", counts:true },
+      IE:  {label:"Institute Elective",        short:"InstE",  color:"#9b63d8", counts:true },
+      LAB: {label:"Software Lab",              short:"Lab",    color:"#f07d3a", counts:true },
+      SEM: {label:"Seminar",                   short:"Sem",    color:"#2db58e", counts:true },
+      RND: {label:"R&D Project",               short:"R&D",    color:"#3ecf8e", counts:true },
+      AL:  {label:"Additional Learning",       short:"ALC",    color:"#8a9bae", counts:false},
+      AU:  {label:"Audit",                     short:"Audit",  color:"#555555", counts:false},
+      PN:  {label:"PP/NP Course",              short:"P/NP",   color:"#c9a227", counts:false},
+    },
+    transitions: {
+      C:["E","IE","AL","AU"],
+      E:["C","IE","AL","AU"],
+      IE:["C","E","AL","AU"],
+      LAB:["C","E","IE","AL","AU"],
+      SEM:["C","E","IE","AL","AU"],
+      RND:["C","E","IE","AL","AU"],
+      AL:["C","E","IE","LAB","SEM","RND","AU"],
+      AU:["C","E","IE","AL"],
+      PN:[],
+    },
+    initialData: () => window.INITIAL_DATA_MTECH,
+  },
 };
-const TAG_TRANSITIONS = {
-  T:["D","SE","HE","O","E","M"], C:[], D:["T","O","E"],
-  SE:["T"], HE:["T"], O:["T","D","E"], E:["T","D","O"], M:["T","SE","HE"], N:[],
-};
+
+let programKey = window.INITIAL_PROGRAM || "ug";
+let TAG_META = (PROGRAM_SCHEMAS[programKey]||PROGRAM_SCHEMAS.ug).tagMeta;
+let TAG_TRANSITIONS = (PROGRAM_SCHEMAS[programKey]||PROGRAM_SCHEMAS.ug).transitions;
+
 const GRADE_POINTS = {AA:10,AB:9,BB:8,BC:7,CC:6,CD:5,DD:4,FF:0,FR:0};
+const GRADE_ORDER = ["AA","AB","BB","BC","CC","CD","DD","FF","FR","II","PP","NP","AU"];
+
+const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let data = window.INITIAL_DATA;
+let data = deepCopy((PROGRAM_SCHEMAS[programKey]||PROGRAM_SCHEMAS.ug).initialData());
 let _uid = 300;
 const uid = () => `u${++_uid}`;
 let collapsedSems = {};
 let modalTargetSemId = null;
+
+function setProgram(key, resetData=true) {
+  const nextKey = PROGRAM_SCHEMAS[key] ? key : "ug";
+  programKey = nextKey;
+  TAG_META = PROGRAM_SCHEMAS[nextKey].tagMeta;
+  TAG_TRANSITIONS = PROGRAM_SCHEMAS[nextKey].transitions;
+
+  const badgeEl = document.getElementById("program-badge");
+  if (badgeEl) badgeEl.textContent = PROGRAM_SCHEMAS[nextKey].badge;
+
+  const infobarEl = document.getElementById("infobar-list");
+  if (infobarEl) infobarEl.innerHTML = PROGRAM_SCHEMAS[nextKey].infobar.map(t => `<li>${t}</li>`).join("");
+
+  const footerEl = document.getElementById("footer-text");
+  if (footerEl) footerEl.innerHTML = PROGRAM_SCHEMAS[nextKey].footer;
+
+  const sel = document.getElementById("program-select");
+  if (sel) sel.value = nextKey;
+
+  const disclaimerEl = document.getElementById("program-disclaimer");
+  if (disclaimerEl) {
+    if (nextKey === "ug") {
+      disclaimerEl.innerHTML = `Disclaimer: This is by default for BTech Aerospace Engineering. You can edit or remove subjects as per your branch.`;
+      disclaimerEl.style.display = "block";
+    } else if (nextKey === "mtech") {
+      disclaimerEl.innerHTML = `Disclaimer: This is by default for MTech CSE. You can edit or remove subjects as per your branch.`;
+      disclaimerEl.style.display = "block";
+    } else {
+      disclaimerEl.textContent = "";
+      disclaimerEl.style.display = "none";
+    }
+  }
+
+  if (resetData) {
+    data = deepCopy(PROGRAM_SCHEMAS[nextKey].initialData());
+    collapsedSems = {};
+    modalTargetSemId = null;
+    closeModal("add-modal");
+  }
+
+  renderAll();
+}
 
 // ── Calculations ──────────────────────────────────────────────────────────────
 function calcSPI(courses, useNew) {
@@ -206,13 +301,14 @@ function renderSemBlock(sem,idx) {
             ${ch?`<span class="spi-delta" style="color:${diff>0?"var(--green)":"var(--red)"}">${diff>0?"▲":"▼"} ${Math.abs(diff).toFixed(3)}</span>`:""}
           </div>
         </div>`:""}
+        <button class="sem-del-btn" onclick="event.stopPropagation(); deleteSemester('${sem.id}')" title="Delete semester">🗑</button>
         <span class="toggle-arrow" style="transform:rotate(${collapsed?"-90deg":"0deg"})">▾</span>
       </div>
     </div>
     <div class="sem-body${collapsed?" collapsed":""}">
       <div class="tbl-header">
         <span>CODE</span><span>COURSE NAME</span><span>CREDITS</span>
-        <span>GRADE</span><span>ORIG TAG</span><span>NEW TAG</span><span></span>
+        <span>GRADE</span><span>ORIG ${programKey==="mtech"?"CAT":"TAG"}</span><span>NEW ${programKey==="mtech"?"CAT":"TAG"}</span><span></span>
       </div>
       ${sem.courses.map(c=>renderCourseRow(c,sem.id)).join("")}
       <button class="add-course-btn" onclick="openAddModal('${sem.id}')">
@@ -228,18 +324,25 @@ function renderCourseRow(c,semId) {
   const origCounts=TAG_META[c.tag]?.counts;
   const newCounts=TAG_META[c.newTag]?.counts;
   const effectChanged=origCounts!==newCounts;
-  const gradeOpts=["AA","AB","BB","BC","CC","CD","DD","FF","PP"].map(g=>
+  const gradeOpts=GRADE_ORDER.map(g=>
     `<option value="${g}"${c.grade===g?" selected":""}>${g}</option>`).join("");
+  const origTagOpts=Object.entries(TAG_META).map(([k,v])=>
+    `<option value="${k}"${c.tag===k?" selected":""}>${v.short}</option>`).join("");
   const newTagOpts=allOpts.map(t=>
     `<option value="${t}"${c.newTag===t?" selected":""}>${TAG_META[t]?.short??t}</option>`).join("");
   return `
   <div class="course-row${isChanged?" changed":""}" id="row-${c.id}">
-    <span class="c-code">${c.code}</span>
-    <span class="c-name" title="${c.name}">${c.name}</span>
+    <input class="text-input code-input" value="${c.code}"
+      onchange="updateCourse('${semId}','${c.id}','code',this.value.trim())">
+    <input class="text-input name-input" value="${c.name}" title="${c.name}"
+      onchange="updateCourse('${semId}','${c.id}','name',this.value.trim())">
     <input class="num-input" type="number" min="0" max="48" value="${c.credits}"
       onchange="updateCourse('${semId}','${c.id}','credits',+this.value)">
     <select class="sel" onchange="updateCourse('${semId}','${c.id}','grade',this.value)">${gradeOpts}</select>
-    ${tagBadge(c.tag)}
+    ${programKey==="mtech"
+      ?`<select class="sel" onchange="updateCourse('${semId}','${c.id}','tag',this.value)">${origTagOpts}</select>`
+      :tagBadge(c.tag)
+    }
     <div class="new-tag-wrap">
       <select class="sel${isChanged?" changed":""}" ${allOpts.length<=1?"disabled":""}
         onchange="updateCourse('${semId}','${c.id}','newTag',this.value)">${newTagOpts}</select>
@@ -266,6 +369,27 @@ function toggleSem(semId) {
 function updateCourse(semId,courseId,field,val) {
   const sem=data.semesters.find(s=>s.id===semId); if(!sem)return;
   const c=sem.courses.find(x=>x.id===courseId);   if(!c)return;
+  if ((field==="code" || field==="name") && !val) {
+    showToast(`✗ ${field==="code" ? "Course code" : "Course name"} cannot be empty.`, true);
+    const semIdx=data.semesters.findIndex(s=>s.id===semId);
+    const el=document.getElementById(`semblock-${semId}`);
+    if(el) el.outerHTML=renderSemBlock(data.semesters[semIdx],semIdx);
+    return;
+  }
+  if (field==="credits") {
+    const n = Number(val);
+    val = Number.isFinite(n) ? Math.max(0, n) : 0;
+  }
+  if (field==="newTag" && programKey==="mtech" && val==="AU") {
+    const otherAuditCount = sem.courses.filter(x => x.id!==courseId && x.newTag==="AU").length;
+    if (otherAuditCount >= 1) {
+      showToast("✗ Only one Audit course per semester is allowed.", true);
+      const semIdx=data.semesters.findIndex(s=>s.id===semId);
+      const el=document.getElementById(`semblock-${semId}`);
+      if(el) el.outerHTML=renderSemBlock(data.semesters[semIdx],semIdx);
+      return;
+    }
+  }
   c[field]=val;
   if(field==="tag") c.newTag=val;
   const semIdx=data.semesters.findIndex(s=>s.id===semId);
@@ -281,15 +405,27 @@ function deleteCourse(semId,courseId) {
   if(el) el.outerHTML=renderSemBlock(data.semesters[semIdx],semIdx);
   renderSPIRow(); updateTopbar();
 }
+function deleteSemester(semId) {
+  const sem=data.semesters.find(s=>s.id===semId); if(!sem)return;
+  if(!confirm(`Delete "${sem.name}"? This will remove all its courses.`)) return;
+  data.semesters=data.semesters.filter(s=>s.id!==semId);
+  delete collapsedSems[semId];
+  if(modalTargetSemId===semId) { modalTargetSemId=null; closeModal("add-modal"); }
+  renderSemesterContainer(); renderSPIRow(); updateTopbar();
+  showToast(`✓ Deleted "${sem.name}"`);
+}
 
 // ── Add Course Modal ──────────────────────────────────────────────────────────
 function openAddModal(semId) {
   modalTargetSemId=semId;
   document.getElementById("m-tag").innerHTML=Object.entries(TAG_META).map(([k,v])=>
     `<option value="${k}">${v.short} — ${v.label}</option>`).join("");
+  document.getElementById("m-grade").innerHTML = GRADE_ORDER.map(g =>
+    `<option value="${g}">${g}</option>`).join("");
   document.getElementById("m-code").value="";
   document.getElementById("m-name").value="";
   document.getElementById("m-credits").value=6;
+  document.getElementById("m-grade").value="BB";
   document.getElementById("add-modal").style.display="flex";
 }
 function closeModal(id) { document.getElementById(id).style.display="none"; }
@@ -299,8 +435,12 @@ function submitAddCourse() {
   const tag=document.getElementById("m-tag").value;
   const credits=+document.getElementById("m-credits").value;
   const grade=document.getElementById("m-grade").value;
-  if(!code||!name){alert("Please fill in Code and Name.");return;}
+  if(!code||!name){showToast("✗ Please fill in Code and Name.", true);return;}
   const sem=data.semesters.find(s=>s.id===modalTargetSemId); if(!sem)return;
+  if (programKey==="mtech" && tag==="AU") {
+    const auditCount = sem.courses.filter(x => x.newTag==="AU").length;
+    if (auditCount >= 1) { showToast("✗ Only one Audit course per semester is allowed.", true); return; }
+  }
   sem.courses.push({id:uid(),code,name,tag,newTag:tag,credits,grade});
   closeModal("add-modal");
   const semIdx=data.semesters.findIndex(s=>s.id===modalTargetSemId);
@@ -324,12 +464,12 @@ function addSemester() {
   data.semesters.push({id:uid(),name,courses:[]});
   hideAddSem();
   document.getElementById("new-sem-name").value="";
-  renderSemesterContainer(); renderSPIRow();
+  renderSemesterContainer(); renderSPIRow(); updateTopbar();
 }
 
 // ── Save / Load ───────────────────────────────────────────────────────────────
 function saveState() {
-  const payload=JSON.stringify({version:2,savedAt:new Date().toISOString(),data},null,2);
+  const payload=JSON.stringify({version:3,savedAt:new Date().toISOString(),program:programKey,data},null,2);
   const blob=new Blob([payload],{type:"application/json"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -345,8 +485,10 @@ function loadState(event) {
   reader.onload=e=>{
     try {
       const parsed=JSON.parse(e.target.result);
+      const loadedProgram = parsed.program || parsed.data?.program || parsed.programKey || "ug";
       const loaded=parsed.data||parsed;
       if(!loaded.semesters) throw new Error("Invalid file — missing semesters");
+      setProgram(loadedProgram, false);
       data=loaded; collapsedSems={};
       renderAll();
       showToast(`✓ Loaded "${file.name}" successfully!`);
@@ -460,4 +602,4 @@ function openSummary() {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
-renderAll();
+setProgram(programKey, false);
