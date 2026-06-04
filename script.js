@@ -1,83 +1,134 @@
-// ── HTML Import: Tag mapping from portal tag text → internal code ─────────────
-const PORTAL_TAG_MAP = {
-  "core course":         "C",
-  "department elective": "D",
-  "dept elective":       "D",
-  "stem elective":       "SE",
-  "se":                  "SE",
-  "hasmed elective":     "HE",
-  "he":                  "HE",
-  "minor course":        "M",
-  "minor":               "M",
-  "honors course":       "O",
-  "honours course":      "O",
-  "honors elective":     "E",
-  "honours elective":    "E",
-  "additional learning": "T",
-  "alc":                 "T",
-  "institute elective":  "IE",   // best-effort mapping
-  "non-credit":          "N",
-  "audit":               "N",
+const PROGRAM_SCHEMAS = {
+  ug: {
+    badge: "IIT Bombay · UG",
+    footer: `Tag rules per IIT Bombay UG Rulebook 2025-26 &nbsp;·&nbsp; Retagging: twice in program (pre-placements &amp; post-curriculum) &nbsp;·&nbsp; Blue rows = CPI-affecting changes &nbsp;·&nbsp; 💾 Save / 📂 Load to persist across sessions`,
+    infobar: [
+      `🏷️ Change <strong>New Tag</strong> to simulate retagging — CPI updates instantly.`,
+      `📊 Tags that count toward CPI: <strong>Core (C), Dept Elective (D), STEM (SE), HASMED (HE)</strong>.`,
+      `📋 Check your curriculum for minimum credits per tag (example varies by department).`,
+      `⚠️ Min <strong>18 credits/sem</strong> required. Retagging allowed <strong>twice</strong> per program (pre-placement &amp; post-curriculum).`,
+      `💾 <strong>Save</strong> exports state as JSON &nbsp;·&nbsp; 📂 <strong>Load</strong> restores a saved file &nbsp;·&nbsp; 📊 <strong>Summary</strong> shows the full retag report.`,
+    ],
+    tagMeta: {
+      C:  {label:"Core Course",               short:"Core",   color:"#e05260", counts:true },
+      D:  {label:"Department Elective",       short:"Dept E", color:"#f07d3a", counts:true },
+      SE: {label:"STEM Elective",             short:"STEM",   color:"#4ca4e0", counts:true },
+      HE: {label:"HASMED Elective",           short:"HSMD",   color:"#9b63d8", counts:true },
+      M:  {label:"Minor Course",              short:"Minor",  color:"#2db58e", counts:false},
+      T:  {label:"Additional Learning (ALC)", short:"ALC",    color:"#8a9bae", counts:false},
+      O:  {label:"Honors Course",             short:"Honors", color:"#c9a227", counts:false},
+      E:  {label:"Honors Elective",           short:"Hon. E", color:"#b08040", counts:false},
+      N:  {label:"Non-credit",               short:"N/A",    color:"#555555", counts:false},
+    },
+    transitions: {
+      T:["D","SE","HE","O","E","M"], C:[], D:["T","O","E"],
+      SE:["T"], HE:["T"], O:["T","D","E"], E:["T","D","O"], M:["T","SE","HE"], N:[],
+    },
+    initialData: () => window.INITIAL_DATA_UG,
+  },
+  mtech: {
+    badge: "IIT Bombay · PG",
+    footer: `PG mode &nbsp;·&nbsp; Blue rows = CPI-affecting changes &nbsp;·&nbsp; 💾 Save / 📂 Load to persist across sessions`,
+    infobar: [
+      `🏷️ Change <strong>New Category</strong> to simulate how re-categorising coursework changes CPI credits and CPI.`,
+      `📚 Audit is limited to one per semester (with instructor consent).`,
+      `💾 <strong>Save</strong> exports state as JSON &nbsp;·&nbsp; 📂 <strong>Load</strong> restores a saved file &nbsp;·&nbsp; 📊 <strong>Summary</strong> shows the full report.`,
+    ],
+    tagMeta: {
+      C:   {label:"Core Course",               short:"Core",   color:"#e05260", counts:true },
+      E:   {label:"Elective",                  short:"Elect",  color:"#4ca4e0", counts:true },
+      IE:  {label:"Institute Elective",        short:"InstE",  color:"#9b63d8", counts:true },
+      LAB: {label:"Software Lab",              short:"Lab",    color:"#f07d3a", counts:true },
+      SEM: {label:"Seminar",                   short:"Sem",    color:"#2db58e", counts:true },
+      RND: {label:"R&D Project",               short:"R&D",    color:"#3ecf8e", counts:true },
+      AL:  {label:"Additional Learning",       short:"ALC",    color:"#8a9bae", counts:false},
+      AU:  {label:"Audit",                     short:"Audit",  color:"#555555", counts:false},
+      PN:  {label:"PP/NP Course",              short:"P/NP",   color:"#c9a227", counts:false},
+    },
+    transitions: {
+      C:["E","IE","AL","AU"],
+      E:["C","IE","AL","AU"],
+      IE:["C","E","AL","AU"],
+      LAB:["C","E","IE","AL","AU"],
+      SEM:["C","E","IE","AL","AU"],
+      RND:["C","E","IE","AL","AU"],
+      AL:["C","E","IE","LAB","SEM","RND","AU"],
+      AU:["C","E","IE","AL"],
+      PN:[],
+    },
+    initialData: () => window.INITIAL_DATA_MTECH,
+  },
 };
-function portalTagToCode(raw) {
 
-    const k = raw
-        .replace(/\s+/g, " ")
-        .trim()
-        .toLowerCase();
+let programKey = window.INITIAL_PROGRAM || "ug";
+let TAG_META = (PROGRAM_SCHEMAS[programKey]||PROGRAM_SCHEMAS.ug).tagMeta;
+let TAG_TRANSITIONS = (PROGRAM_SCHEMAS[programKey]||PROGRAM_SCHEMAS.ug).transitions;
 
-    return PORTAL_TAG_MAP[k] || "UNKNOWN";
-}
-
-// ── Graduation Requirements State ─────────────────────────────────────────────
-let gradReqs = null; // null = not set; object when set
-
-// ── Tag definitions ───────────────────────────────────────────────────────────
-const TAG_META = {
-  C:  {label:"Core Course",               short:"Core",   color:"#e05260", counts:true },
-  D:  {label:"Department Elective",       short:"Dept E", color:"#f07d3a", counts:true },
-  SE: {label:"STEM Elective",             short:"STEM",   color:"#4ca4e0", counts:true },
-  HE: {label:"HASMED Elective",           short:"HSMD",   color:"#9b63d8", counts:true },
-  M:  {label:"Minor Course",              short:"Minor",  color:"#2db58e", counts:false},
-  T:  {label:"Additional Learning (ALC)", short:"ALC",    color:"#8a9bae", counts:false},
-  O:  {label:"Honors Course",             short:"Honors", color:"#c9a227", counts:false},
-  E:  {label:"Honors Elective",           short:"Hon. E", color:"#b08040", counts:false},
-  N:  {label:"Non-credit",               short:"N/A",    color:"#555555", counts:false},
-  IE: {label:"Institute Elective",        short:"IE",     color:"#6c8cff",counts:true}
-};
-const TAG_TRANSITIONS = {
-  T:["D","SE","HE","O","E","M"], C:[], D:["T","O","E"],
-  SE:["T"], HE:["T"], O:["T","D","E"], E:["T","D","O"], M:["T","SE","HE"], N:[],IE:["T","SE","D","HE","M","O","E"],
-};
 const GRADE_POINTS = {AA:10,AB:9,BB:8,BC:7,CC:6,CD:5,DD:4,FF:0,FR:0};
-const flexTags = ["IE","D","SE","HE"];
+const GRADE_ORDER = ["AA","AB","BB","BC","CC","CD","DD","FF","FR","II","PP","NP","AU"];
+
+const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
+
 // ── State ─────────────────────────────────────────────────────────────────────
-let data = window.INITIAL_DATA;
+let data = deepCopy((PROGRAM_SCHEMAS[programKey]||PROGRAM_SCHEMAS.ug).initialData());
 let _uid = 300;
 const uid = () => `u${++_uid}`;
 let collapsedSems = {};
 let modalTargetSemId = null;
 
-// ── Calculations ──────────────────────────────────────────────────────────────
-function calcSPI(courses, useNew) {
-  let ws = 0;
-  let tc = 0;
+function setProgram(key, resetData=true) {
+  const nextKey = PROGRAM_SCHEMAS[key] ? key : "ug";
+  programKey = nextKey;
+  TAG_META = PROGRAM_SCHEMAS[nextKey].tagMeta;
+  TAG_TRANSITIONS = PROGRAM_SCHEMAS[nextKey].transitions;
 
-  for (const c of courses) {
+  const badgeEl = document.getElementById("program-badge");
+  if (badgeEl) badgeEl.textContent = PROGRAM_SCHEMAS[nextKey].badge;
 
-    const tag = useNew ? c.newTag : c.tag;
+  const infobarEl = document.getElementById("infobar-list");
+  if (infobarEl) infobarEl.innerHTML = PROGRAM_SCHEMAS[nextKey].infobar.map(t => `<li>${t}</li>`).join("");
 
-    if (!TAG_META[tag]?.counts) continue;
+  const footerEl = document.getElementById("footer-text");
+  if (footerEl) footerEl.innerHTML = PROGRAM_SCHEMAS[nextKey].footer;
 
-    const gp = GRADE_POINTS[c.grade];
+  const sel = document.getElementById("program-select");
+  if (sel) sel.value = nextKey;
 
-    if (gp === undefined) continue;
-
-    ws += gp * c.credits;
-    tc += c.credits;
+  const disclaimerEl = document.getElementById("program-disclaimer");
+  if (disclaimerEl) {
+    if (nextKey === "ug") {
+      disclaimerEl.innerHTML = `Disclaimer: This is by default for BTech Aerospace Engineering. You can edit or remove subjects as per your branch.`;
+      disclaimerEl.style.display = "block";
+    } else if (nextKey === "mtech") {
+      disclaimerEl.innerHTML = `Disclaimer: This is by default for MTech CSE. You can edit or remove subjects as per your branch.`;
+      disclaimerEl.style.display = "block";
+    } else {
+      disclaimerEl.textContent = "";
+      disclaimerEl.style.display = "none";
+    }
   }
 
-  return tc > 0 ? ws / tc : null;
+  if (resetData) {
+    data = deepCopy(PROGRAM_SCHEMAS[nextKey].initialData());
+    collapsedSems = {};
+    modalTargetSemId = null;
+    closeModal("add-modal");
+  }
+
+  renderAll();
+}
+
+// ── Calculations ──────────────────────────────────────────────────────────────
+function calcSPI(courses, useNew) {
+  let ws=0,tc=0;
+  for (const c of courses) {
+    const tag = useNew ? c.newTag : c.tag;
+    if (!TAG_META[tag]?.counts) continue;
+    const gp = GRADE_POINTS[c.grade];
+    if (gp===undefined) continue;
+    ws += gp*c.credits; tc += c.credits;
+  }
+  return tc>0 ? ws/tc : null;
 }
 function calcCPI(useNew) {
   let ws=0,tc=0;
@@ -126,180 +177,6 @@ function showToast(msg, isError=false) {
   toastTimer = setTimeout(()=>t.className="", 3000);
 }
 
-function getCurrentCredits() {
-    const result = {
-        core: 0,
-        department: 0,
-        stem: 0,
-        hasmed: 0,
-        flexible: 0
-    };
-
-    for (const sem of data.semesters) {
-        for (const c of sem.courses) {
-
-            const tag = c.newTag;
-
-            if (GRADE_POINTS[c.grade] === undefined)
-                continue;
-
-            switch(tag) {
-                case "C":
-                    result.core += c.credits;
-                    break;
-
-                case "D":
-                    result.department += c.credits;
-                    break;
-
-                case "SE":
-                    result.stem += c.credits;
-                    break;
-
-                case "HE":
-                    result.hasmed += c.credits;
-                    break;
-
-                case "IE":
-                    result.flexible += c.credits;
-                    break;
-            }
-        }
-    }
-
-    return result;
-}
-
-
-function getRemainingCredits() {
-
-    if (!gradReqs)
-        return null;
-
-    const current = getCurrentCredits();
-
-    return {
-        core: Math.max(0, gradReqs.core - current.core),
-        department: Math.max(0, gradReqs.department - current.department),
-        stem: Math.max(0, gradReqs.stem - current.stem),
-        hasmed: Math.max(0, gradReqs.hasmed - current.hasmed),
-        flexible: Math.max(0, gradReqs.flexible - current.flexible)
-    };
-}
-
-
-
-const DEFAULT_GRAD_REQS = {
-  core:       { label: "Core (C)",           tag: "C",  required: 156 },
-  hasmed:     { label: "HASMED (HE)",        tag: "HE", required: 12  },
-  stem:       { label: "STEM (SE)",          tag: "SE", required: 12  },
-  department: { label: "Department (D)",     tag: "D",  required: 36  },
-  flexible:   { label: "Flexible (T/other)", tag: null, required: 36  },
-};
-
-function calcGradProgress() {
-  const reqs = gradReqs || DEFAULT_GRAD_REQS;
-  const tagTotals = {}; // tag → credits (using newTag)
-  let totalCredits = 0;
-  for (const sem of data.semesters) {
-    for (const c of sem.courses) {
-      if (!TAG_META[c.newTag]?.counts && c.newTag !== "T") continue;
-      const gp = GRADE_POINTS[c.grade];
-      if (gp === undefined) continue;
-      tagTotals[c.newTag] = (tagTotals[c.newTag] || 0) + c.credits;
-      totalCredits += c.credits;
-    }
-  }
-  // "Flexible" = everything that counts but isn't C/D/SE/HE
-  const flexTags = Object.keys(TAG_META).filter(t => !["C","D","SE","HE"].includes(t) && TAG_META[t].counts);
-  const flexCredits = flexTags.reduce((s, t) => s + (tagTotals[t] || 0), 0);
-
-  const rows = [];
-  for (const [key, req] of Object.entries(reqs)) {
-    const earned = req.tag ? (tagTotals[req.tag] || 0) : flexCredits;
-    const remaining = Math.max(0, req.required - earned);
-    rows.push({ key, label: req.label, required: req.required, earned, remaining });
-  }
-  return rows;
-}
-
-function openGradModal() {
-  const reqs = gradReqs || DEFAULT_GRAD_REQS;
-  document.getElementById("grad-core").value    = reqs.core.required;
-  document.getElementById("grad-hasmed").value  = reqs.hasmed.required;
-  document.getElementById("grad-stem").value    = reqs.stem.required;
-  document.getElementById("grad-dept").value    = reqs.department.required;
-  document.getElementById("grad-flex").value    = reqs.flexible.required;
-  document.getElementById("grad-modal").style.display = "flex";
-  renderGradProgress();
-}
-function saveGradReqs() {
-  gradReqs = {
-    core:       { label: "Core (C)",           tag: "C",  required: +document.getElementById("grad-core").value   || 156 },
-    hasmed:     { label: "HASMED (HE)",        tag: "HE", required: +document.getElementById("grad-hasmed").value || 12  },
-    stem:       { label: "STEM (SE)",          tag: "SE", required: +document.getElementById("grad-stem").value   || 12  },
-    department: { label: "Department (D)",     tag: "D",  required: +document.getElementById("grad-dept").value   || 36  },
-    flexible:   { label: "Flexible (T/other)", tag: null, required: +document.getElementById("grad-flex").value   || 36  },
-  };
-  renderGradProgress();
-  closeModal("grad-modal");
-  renderCreditStrip();
-  updateTopbar();
-  showToast("✓ Graduation requirements updated!");
-
-}
-function renderGradProgress() {
-  const rows = calcGradProgress();
-
-  const current = getCurrentCredits();
-  const remaining = getRemainingCredits();
-  const totalReq  = rows.reduce((s,r) => s + r.required, 0);
-  const totalEarn = rows.reduce((s,r) => s + r.earned, 0);
-  const totalRem  = rows.reduce((s,r) => s + r.remaining, 0);
-
-  const barHtml = rows.map(r => {
-    const pct = Math.min(100, Math.round((r.earned / r.required) * 100));
-    const done = r.remaining === 0;
-    const barColor = done ? "var(--green)" : r.earned > 0 ? "var(--amber)" : "var(--red)";
-    return `
-    <div class="grad-row">
-      <div class="grad-label">${r.label}</div>
-      <div class="grad-bar-wrap">
-        <div class="grad-bar-bg">
-          <div class="grad-bar-fill" style="width:${pct}%;background:${barColor}"></div>
-        </div>
-        <span class="grad-bar-pct" style="color:${barColor}">${pct}%</span>
-      </div>
-      <div class="grad-nums">
-        <span style="color:${done?'var(--green)':'var(--text)'}">
-          ${r.earned} / ${r.required} cr
-        </span>
-        ${done
-          ? `<span class="grad-done">✓ Done</span>`
-          : `<span class="grad-need" style="color:var(--amber)">Need ${r.remaining} more cr</span>`}
-      </div>
-    </div>`;
-  }).join("");
-
-  const totalHtml = `
-  <div class="grad-total-row">
-    <span>Total:</span>
-    <span style="font-weight:800;color:${totalRem===0?'var(--green)':'var(--amber)'}">
-      ${totalEarn} / ${totalReq} credits
-    </span>
-    <span style="color:${totalRem===0?'var(--green)':'var(--amber)'}">
-      ${totalRem===0 ? "🎓 All requirements met!" : `${totalRem} credits remaining`}
-    </span>
-  </div>`;
-
-  const body = document.getElementById("grad-body");
-  if (body) body.innerHTML = barHtml + totalHtml;
-}
-
-
-
-
-
 // ── Credit strip (under topbar) ───────────────────────────────────────────────
 function renderCreditStrip() {
   const origTags = tagCredits(false);
@@ -327,46 +204,7 @@ function renderCreditStrip() {
     </div>`;
   });
   document.getElementById("credit-strip").innerHTML = totalHtml + items.join("");
-
-};
-
-const items = allTags.map(tag => {
-
-    const m = TAG_META[tag];
-    if (!m) return "";
-
-    const earned = newTags[tag] || 0;
-
-    const req = reqMap[tag];
-
-    let progressText = `${earned} cr`;
-
-    if (req) {
-        progressText =
-            `${earned}/${req.required}`;
-
-        if (req.remaining === 0)
-            progressText += ` ✓`;
-        else
-            progressText += ` (-${req.remaining})`;
-    }
-
-    return `
-    <div class="cstrip-item">
-      <span class="cstrip-badge"
-            style="background:${m.color}22;
-                   color:${m.color};
-                   border:1px solid ${m.color}44">
-          ${m.short}
-      </span>
-
-      <span class="cstrip-cr">${progressText}</span>
-    </div>`;
-});
-
-
-
-
+}
 
 // ── Topbar scores ─────────────────────────────────────────────────────────────
 function updateTopbar() {
@@ -404,7 +242,6 @@ function updateTopbar() {
     origCPI!==null?origCPI*0.4:null, newCPI!==null?newCPI*0.4:null);
 
   renderCreditStrip();
-  renderGradProgress();
 }
 
 // ── Legend ────────────────────────────────────────────────────────────────────
@@ -464,13 +301,14 @@ function renderSemBlock(sem,idx) {
             ${ch?`<span class="spi-delta" style="color:${diff>0?"var(--green)":"var(--red)"}">${diff>0?"▲":"▼"} ${Math.abs(diff).toFixed(3)}</span>`:""}
           </div>
         </div>`:""}
+        <button class="sem-del-btn" onclick="event.stopPropagation(); deleteSemester('${sem.id}')" title="Delete semester">🗑</button>
         <span class="toggle-arrow" style="transform:rotate(${collapsed?"-90deg":"0deg"})">▾</span>
       </div>
     </div>
     <div class="sem-body${collapsed?" collapsed":""}">
       <div class="tbl-header">
         <span>CODE</span><span>COURSE NAME</span><span>CREDITS</span>
-        <span>GRADE</span><span>ORIG TAG</span><span>NEW TAG</span><span></span>
+        <span>GRADE</span><span>ORIG ${programKey==="mtech"?"CAT":"TAG"}</span><span>NEW ${programKey==="mtech"?"CAT":"TAG"}</span><span></span>
       </div>
       ${sem.courses.map(c=>renderCourseRow(c,sem.id)).join("")}
       <button class="add-course-btn" onclick="openAddModal('${sem.id}')">
@@ -486,18 +324,25 @@ function renderCourseRow(c,semId) {
   const origCounts=TAG_META[c.tag]?.counts;
   const newCounts=TAG_META[c.newTag]?.counts;
   const effectChanged=origCounts!==newCounts;
-  const gradeOpts=["AA","AB","BB","BC","CC","CD","DD","FF","PP"].map(g=>
+  const gradeOpts=GRADE_ORDER.map(g=>
     `<option value="${g}"${c.grade===g?" selected":""}>${g}</option>`).join("");
+  const origTagOpts=Object.entries(TAG_META).map(([k,v])=>
+    `<option value="${k}"${c.tag===k?" selected":""}>${v.short}</option>`).join("");
   const newTagOpts=allOpts.map(t=>
     `<option value="${t}"${c.newTag===t?" selected":""}>${TAG_META[t]?.short??t}</option>`).join("");
   return `
   <div class="course-row${isChanged?" changed":""}" id="row-${c.id}">
-    <span class="c-code">${c.code}</span>
-    <span class="c-name" title="${c.name}">${c.name}</span>
+    <input class="text-input code-input" value="${c.code}"
+      onchange="updateCourse('${semId}','${c.id}','code',this.value.trim())">
+    <input class="text-input name-input" value="${c.name}" title="${c.name}"
+      onchange="updateCourse('${semId}','${c.id}','name',this.value.trim())">
     <input class="num-input" type="number" min="0" max="48" value="${c.credits}"
       onchange="updateCourse('${semId}','${c.id}','credits',+this.value)">
     <select class="sel" onchange="updateCourse('${semId}','${c.id}','grade',this.value)">${gradeOpts}</select>
-    ${tagBadge(c.tag)}
+    ${programKey==="mtech"
+      ?`<select class="sel" onchange="updateCourse('${semId}','${c.id}','tag',this.value)">${origTagOpts}</select>`
+      :tagBadge(c.tag)
+    }
     <div class="new-tag-wrap">
       <select class="sel${isChanged?" changed":""}" ${allOpts.length<=1?"disabled":""}
         onchange="updateCourse('${semId}','${c.id}','newTag',this.value)">${newTagOpts}</select>
@@ -524,6 +369,27 @@ function toggleSem(semId) {
 function updateCourse(semId,courseId,field,val) {
   const sem=data.semesters.find(s=>s.id===semId); if(!sem)return;
   const c=sem.courses.find(x=>x.id===courseId);   if(!c)return;
+  if ((field==="code" || field==="name") && !val) {
+    showToast(`✗ ${field==="code" ? "Course code" : "Course name"} cannot be empty.`, true);
+    const semIdx=data.semesters.findIndex(s=>s.id===semId);
+    const el=document.getElementById(`semblock-${semId}`);
+    if(el) el.outerHTML=renderSemBlock(data.semesters[semIdx],semIdx);
+    return;
+  }
+  if (field==="credits") {
+    const n = Number(val);
+    val = Number.isFinite(n) ? Math.max(0, n) : 0;
+  }
+  if (field==="newTag" && programKey==="mtech" && val==="AU") {
+    const otherAuditCount = sem.courses.filter(x => x.id!==courseId && x.newTag==="AU").length;
+    if (otherAuditCount >= 1) {
+      showToast("✗ Only one Audit course per semester is allowed.", true);
+      const semIdx=data.semesters.findIndex(s=>s.id===semId);
+      const el=document.getElementById(`semblock-${semId}`);
+      if(el) el.outerHTML=renderSemBlock(data.semesters[semIdx],semIdx);
+      return;
+    }
+  }
   c[field]=val;
   if(field==="tag") c.newTag=val;
   const semIdx=data.semesters.findIndex(s=>s.id===semId);
@@ -539,15 +405,27 @@ function deleteCourse(semId,courseId) {
   if(el) el.outerHTML=renderSemBlock(data.semesters[semIdx],semIdx);
   renderSPIRow(); updateTopbar();
 }
+function deleteSemester(semId) {
+  const sem=data.semesters.find(s=>s.id===semId); if(!sem)return;
+  if(!confirm(`Delete "${sem.name}"? This will remove all its courses.`)) return;
+  data.semesters=data.semesters.filter(s=>s.id!==semId);
+  delete collapsedSems[semId];
+  if(modalTargetSemId===semId) { modalTargetSemId=null; closeModal("add-modal"); }
+  renderSemesterContainer(); renderSPIRow(); updateTopbar();
+  showToast(`✓ Deleted "${sem.name}"`);
+}
 
 // ── Add Course Modal ──────────────────────────────────────────────────────────
 function openAddModal(semId) {
   modalTargetSemId=semId;
   document.getElementById("m-tag").innerHTML=Object.entries(TAG_META).map(([k,v])=>
     `<option value="${k}">${v.short} — ${v.label}</option>`).join("");
+  document.getElementById("m-grade").innerHTML = GRADE_ORDER.map(g =>
+    `<option value="${g}">${g}</option>`).join("");
   document.getElementById("m-code").value="";
   document.getElementById("m-name").value="";
   document.getElementById("m-credits").value=6;
+  document.getElementById("m-grade").value="BB";
   document.getElementById("add-modal").style.display="flex";
 }
 function closeModal(id) { document.getElementById(id).style.display="none"; }
@@ -557,8 +435,12 @@ function submitAddCourse() {
   const tag=document.getElementById("m-tag").value;
   const credits=+document.getElementById("m-credits").value;
   const grade=document.getElementById("m-grade").value;
-  if(!code||!name){alert("Please fill in Code and Name.");return;}
+  if(!code||!name){showToast("✗ Please fill in Code and Name.", true);return;}
   const sem=data.semesters.find(s=>s.id===modalTargetSemId); if(!sem)return;
+  if (programKey==="mtech" && tag==="AU") {
+    const auditCount = sem.courses.filter(x => x.newTag==="AU").length;
+    if (auditCount >= 1) { showToast("✗ Only one Audit course per semester is allowed.", true); return; }
+  }
   sem.courses.push({id:uid(),code,name,tag,newTag:tag,credits,grade});
   closeModal("add-modal");
   const semIdx=data.semesters.findIndex(s=>s.id===modalTargetSemId);
@@ -582,12 +464,12 @@ function addSemester() {
   data.semesters.push({id:uid(),name,courses:[]});
   hideAddSem();
   document.getElementById("new-sem-name").value="";
-  renderSemesterContainer(); renderSPIRow();
+  renderSemesterContainer(); renderSPIRow(); updateTopbar();
 }
 
 // ── Save / Load ───────────────────────────────────────────────────────────────
 function saveState() {
-  const payload=JSON.stringify({version:2,savedAt:new Date().toISOString(),data},null,2);
+  const payload=JSON.stringify({version:3,savedAt:new Date().toISOString(),program:programKey,data},null,2);
   const blob=new Blob([payload],{type:"application/json"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -603,8 +485,10 @@ function loadState(event) {
   reader.onload=e=>{
     try {
       const parsed=JSON.parse(e.target.result);
+      const loadedProgram = parsed.program || parsed.data?.program || parsed.programKey || "ug";
       const loaded=parsed.data||parsed;
       if(!loaded.semesters) throw new Error("Invalid file — missing semesters");
+      setProgram(loadedProgram, false);
       data=loaded; collapsedSems={};
       renderAll();
       showToast(`✓ Loaded "${file.name}" successfully!`);
@@ -717,127 +601,5 @@ function openSummary() {
   document.getElementById("summary-modal").style.display = "flex";
 }
 
-// ── HTML Portal Import ────────────────────────────────────────────────────────
-function parsePortalHTML(htmlText) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlText, "text/html");
-
-  // Find the "Semester-wise Details" section header
-  const semDetailAnchor = doc.querySelector('a[name="semDetails"]');
-  if (!semDetailAnchor) {
-    showToast("✗ Could not find 'Semester-wise Details' section in the HTML.", true);
-    return null;
-  }
-
-  const semesters = [];
-  let ctr = 0;
-  // Walk sibling nodes after the anchor to find all h3 + table pairs
-  let node = semDetailAnchor.parentElement ? semDetailAnchor.parentElement.nextElementSibling : null;
-  // Fallback: search the whole doc for h3 elements containing Year/Semester
-  const allH3 = Array.from(doc.querySelectorAll("h3"));
-  const semH3s = allH3.filter(h => /Year\/Semester/.test(h.textContent));
-
-  if (semH3s.length === 0) {
-    showToast("✗ No semester headings (Year/Semester: ...) found.", true);
-    return null;
-  }
-
-  // Semesters in portal are listed newest-first; we'll reverse to chronological
-  const semBlocksRaw = [];
-  for (const h3 of semH3s) {
-    const titleMatch = h3.textContent.match(/(\d{4}(?:-\d{2})?)[\/\s]+(Autumn|Spring|Summer)/i);
-    let semName = h3.textContent.replace(/Year\/Semester:\s*/i, "").trim();
-    // Normalise: "2023-24/Autumn" → "Autumn 2023"
-    if (titleMatch) {
-      const yr = titleMatch[1].split("-")[0];
-      const season = titleMatch[2];
-      semName = `${season} ${yr}`;
-    }
-    // Find the nearest following table
-    let sib = h3.nextElementSibling;
-
-    while (
-        sib &&
-        (
-            sib.tagName !== "TABLE" ||
-            sib.querySelectorAll("tr").length < 2
-        )
-    ) {
-        sib = sib.nextElementSibling;
-    }
-    
-    if (!sib) continue;
-
-    const courses = [];
-    const rows = sib.querySelectorAll("tr");
-    for (const row of rows) {
-      const cells = Array.from(row.querySelectorAll("td"));
-      if (cells.length < 5) continue;
-      const code = cells[0].textContent.replace(/\(.*?\)/g, "").trim();
-      const name = cells[1].childNodes[0]?.textContent?.trim() || cells[1].textContent.trim();
-      const credits = parseFloat(cells[2].textContent.trim()) || 0;
-      const tagRaw = cells[3].textContent.trim();
-      const grade = cells[4].textContent.trim().toUpperCase();
-      if (!code || !name || !grade) continue;
-      const tagCode = portalTagToCode(tagRaw);
-      const creditAudit = cells[5]?.textContent?.trim() || "C";
-      // N/audit courses
-      const finalTag = (creditAudit === "N" || grade === "PP" && credits === 0) ? "N" : tagCode;
-      courses.push({ id: uid(), code, name, tag: finalTag, newTag: finalTag, credits, grade: grade || "PP" });
-    }
-    if (courses.length > 0) semBlocksRaw.push({ semName, courses });
-  }
-
-  if (semBlocksRaw.length === 0) {
-    showToast("✗ No courses found in the HTML. Are you uploading the right page?", true);
-    return null;
-  }
-
-  // Reverse so oldest semester comes first (portal shows newest first)
-  semBlocksRaw.reverse();
-  const result = semBlocksRaw.map((b, i) => ({
-    id: uid(),
-    name: b.semName || `Semester ${i + 1}`,
-    courses: b.courses,
-  }));
-  return result;
-}
-
-function importFromPortalHTML(event) {
-  const file = event.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const parsed = parsePortalHTML(e.target.result);
-    if (!parsed) return;
-    // Ask user: replace or merge?
-    const replace = confirm(
-      `Found ${parsed.length} semesters with courses from the portal HTML.\n\n` +
-      `Click OK to REPLACE current data, or Cancel to MERGE (add semesters that don't already exist).`
-    );
-    if (replace) {
-      data = { semesters: parsed };
-      collapsedSems = {};
-    } else {
-      // Merge: only add semesters whose names don't already exist
-      const existingNames = new Set(data.semesters.map(s => s.name.toLowerCase()));
-      let added = 0;
-      for (const s of parsed) {
-        if (!existingNames.has(s.name.toLowerCase())) {
-          data.semesters.push(s);
-          added++;
-        }
-      }
-      showToast(`✓ Merged: added ${added} new semester(s).`);
-    }
-    renderAll();
-    if (replace) showToast(`✓ Imported ${parsed.length} semesters from portal HTML!`);
-  };
-  reader.readAsText(file);
-  event.target.value = "";
-}
-
-// ── Graduation Requirements ───────────────────────────────────────────────────
-// Default profile for IIT Bombay AE B.Tech (user can override in the modal)
-
 // ── Boot ──────────────────────────────────────────────────────────────────────
-renderAll();
+setProgram(programKey, false);
