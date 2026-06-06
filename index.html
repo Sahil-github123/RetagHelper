@@ -46,23 +46,94 @@
 
     <div class="toolbar">
       <button class="tb-btn summary-btn" onclick="openSummary()">📊 Summary</button>
+      <button class="tb-btn grad-btn"    onclick="openGradModal()">🎓 Grad Req</button>
+      <button class="tb-btn import-btn"  onclick="document.getElementById('portal-import').click()" title="Import from IIT Bombay portal HTML page">🌐 Import HTML</button>
       <button class="tb-btn secondary"   onclick="saveState()">💾 Save</button>
       <button class="tb-btn secondary"   onclick="document.getElementById('file-input').click()">📂 Load</button>
-      <input type="file" id="file-input" accept=".json" onchange="loadState(event)">
+      <input type="file" id="file-input"     accept=".json" onchange="loadState(event)"   style="display:none">
+      <input type="file" id="portal-import"  accept=".htm,.html" onchange="importFromPortalHTML(event)"   style="display:none">
     </div>
   </div>
   <div id="credit-strip"></div>
+</div>
+
+<!-- Graduation Requirements Modal -->
+<div class="modal-overlay"
+     id="grad-modal"
+     style="display:none"
+     onclick="if(event.target===this)closeModal('grad-modal')">
+
+  <div class="modal" style="max-width:700px">
+
+    <h3>🎓 Graduation Requirements</h3>
+
+    <div class="modal-fields">
+
+      <div class="modal-3col">
+
+        <div class="field">
+          <label>CORE</label>
+          <input type="number" id="grad-core" min="0">
+        </div>
+
+        <div class="field">
+          <label>HASMED</label>
+          <input type="number" id="grad-hasmed" min="0">
+        </div>
+
+        <div class="field">
+          <label>STEM</label>
+          <input type="number" id="grad-stem" min="0">
+        </div>
+
+      </div>
+
+      <div class="modal-3col">
+
+        <div class="field">
+          <label>DEPARTMENT</label>
+          <input type="number" id="grad-dept" min="0">
+        </div>
+
+        <div class="field">
+          <label>FLEXIBLE</label>
+          <input type="number" id="grad-flex" min="0">
+        </div>
+
+      </div>
+
+      <div id="grad-body"
+           style="margin-top:20px;display:flex;flex-direction:column;gap:12px">
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost"
+              onclick="closeModal('grad-modal')">
+        Close
+      </button>
+
+      <button class="btn-primary"
+              onclick="saveGradReqs()">
+        Save Requirements
+      </button>
+    </div>
+
+  </div>
 </div>
 
 <!-- Main content -->
 <div id="main">
   <div id="legend"></div>
   <div id="spi-row"></div>
+  <div id="grad-progress-card" class="score-card"></div>
   <div class="infobar">
     <ul style="list-style:none;display:flex;flex-direction:column;gap:5px;padding:0">
       <li>🏷️ Change <strong>New Tag</strong> to simulate retagging — CPI updates instantly.</li>
       <li>📊 Tags that count toward CPI: <strong>Core (C), Dept Elective (D), STEM (SE), HASMED (HE)</strong>. Flexible electives above minimums are not explicitly tracked.</li>
-      <li>📋 Check your curriculum for minimum credits per tag (e.g. Aerospace: DE=36, SE=12, HE=12, FE=36).</li>
+      <li>🌐 <strong>Import HTML</strong> — save your IIT Bombay portal page as HTML and import it to auto-fill all semesters &amp; courses.</li>
+      <li>🎓 <strong>Grad Req</strong> — set your graduation credit requirements and track how many credits remain.</li>
       <li>⚠️ Min <strong>18 credits/sem</strong> required. Retagging allowed <strong>twice</strong> per program (pre-placement &amp; post-curriculum).</li>
       <li>💾 <strong>Save</strong> exports state as JSON &nbsp;·&nbsp; 📂 <strong>Load</strong> restores a saved file &nbsp;·&nbsp; 📊 <strong>Summary</strong> shows the full retag report.</li>
     </ul>
